@@ -38,5 +38,20 @@ pipeline {
                 sh 'docker build -t calculator-app-finished .'
             }
         }
+        stage('Push artifact to DockerHub') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        // Here I in to Docker Hub
+                        sh """
+                            echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
+                        """
+                        // Here I push the image to Docker Hub
+                        sh 'docker tag calculator-app-finished $DOCKER_USERNAME/calculator-app-finished'
+                        sh 'docker push $DOCKER_USERNAME/calculator-app-finished'
+                    }
+                }
+            }
+        }
     }
 }
