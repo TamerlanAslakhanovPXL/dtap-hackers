@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    environment {
+        DOCKER_CREDENTIALS = credentials('docker-hub-credentials')
+    }
   
     stages {
         stage ('cleanup'){
@@ -12,7 +15,6 @@ pipeline {
         }
         stage('fetch app code') {
             steps {
-                // Get some code from a GitHub repository
                 git branch: 'main', url: 'https://github.com/PXL-2TIN-DevOps-Resources/calculator-app-finished.git'
             }
         }
@@ -34,22 +36,18 @@ pipeline {
             }
         }
         stage ('Build artifact'){
-            steps{
+            steps {
                 sh 'docker build -t calculator-app-finished .'
             }
         }
         stage('Push artifact to DockerHub') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        // Here I in to Docker Hub
-                        sh """
-                            echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
-                        """
-                        // Here I push the image to Docker Hub
-                        sh 'docker tag calculator-app-finished $DOCKER_USERNAME/calculator-app-finished'
-                        sh 'docker push $DOCKER_USERNAME/calculator-app-finished'
-                    }
+                    sh """
+                        echo $DOCKER_CREDENTIALS_PSW | docker login --username $DOCKER_CREDENTIALS_USR --password-stdin
+                        docker tag calculator-app-finished $DOCKER_CREDENTIALS_USR/calculator-app-finished
+                        docker push $DOCKER_CREDENTIALS_USR/calculator-app-finished
+                    """
                 }
             }
         }
@@ -58,7 +56,6 @@ pipeline {
                 script {
                     echo "Deploying container on port 3000..."
                     
-                    // Stop and remove existing container if it exists
                     sh '''
                         if docker ps -a | grep calculator-app; then
                             docker stop calculator-app
@@ -66,10 +63,8 @@ pipeline {
                         fi
                     '''
                     
-                    // Run the new container
-                    sh 'docker run -d -p 3000:8080 --name calculator-app $DOCKER_USERNAME/calculator-app-finished'
+                    sh "docker run -d -p 3000:8080 --name calculator-app $DOCKER_CREDENTIALS_USR/calculator-app-finished"
                     
-                    // Check if the container is running
                     sh 'docker ps'
                 }
             }
