@@ -26,5 +26,10 @@ pipeline {
                 }
             }
         }
+        stage ('Build artifact'){
+            steps{
+                sh 'docker build -t calculator-app-finished .'
+            }
+        }
     }
 }
