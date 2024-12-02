@@ -3,8 +3,11 @@ pipeline {
   
     stages {
         stage ('cleanup'){
-            steps{
-                // TODO
+            steps {
+                script {
+                    echo "Cleaning workspace..."
+                    deleteDir()
+                }
             }
         }
         stage('fetch app code') {
