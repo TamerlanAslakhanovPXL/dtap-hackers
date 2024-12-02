@@ -53,5 +53,18 @@ pipeline {
                 }
             }
         }
+        stage('Deploy container') {
+            steps {
+                script {
+                    echo "Deploying container on port 3000..."
+        
+                    // Here i am running Docker container in detached mode and map port 3000
+                    sh 'docker run -d -p 3000:8080 --name calculator-app $DOCKER_USERNAME/calculator-app-finished'
+        
+                    // Here I do check if the container is running
+                    sh 'docker ps'
+                }
+            }
+        }
     }
 }
