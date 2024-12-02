@@ -57,11 +57,19 @@ pipeline {
             steps {
                 script {
                     echo "Deploying container on port 3000..."
-        
-                    // Here i am running Docker container in detached mode and map port 3000
+                    
+                    // Stop and remove existing container if it exists
+                    sh '''
+                        if docker ps -a | grep calculator-app; then
+                            docker stop calculator-app
+                            docker rm calculator-app
+                        fi
+                    '''
+                    
+                    // Run the new container
                     sh 'docker run -d -p 3000:8080 --name calculator-app $DOCKER_USERNAME/calculator-app-finished'
-        
-                    // Here I do check if the container is running
+                    
+                    // Check if the container is running
                     sh 'docker ps'
                 }
             }
