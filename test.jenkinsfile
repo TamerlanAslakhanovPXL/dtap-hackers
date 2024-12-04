@@ -63,7 +63,7 @@ pipeline {
                         fi
                     '''
                     
-                    sh "docker run -d -p 3000:8080 --name calculator-app $DOCKER_CREDENTIALS_USR/calculator-app-finished"
+                    sh "docker run -d -p 3000:3000 --name calculator-app $DOCKER_CREDENTIALS_USR/calculator-app-finished"
                     
                     sh 'docker ps'
                 }
