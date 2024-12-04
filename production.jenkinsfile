@@ -1,9 +1,60 @@
 pipeline {
     agent any
+    environment {
+        DOCKER_CREDENTIALS = credentials('docker-hub-credentials')  // DockerHub credentials
+        SSH_CREDENTIALS = credentials('prod-server-ssh')  // SSH credentials for connecting to EC2
+        PROD_SERVER_IP = '34.239.247.129'  // IP-address from production server EC-2 instance
+    }
+  
     stages {
-        stage('dtap production') {
+        stage('deploy prod') {
             steps {
-                echo "good luck..."
+                sshagent(['prod-server-ssh']) {
+                    script {
+                        echo "Deploying the latest Docker container to production server..."
+                        
+                        sh '''
+                            ssh -o StrictHostKeyChecking=no ubuntu@$PROD_SERVER_IP "docker pull $DOCKER_CREDENTIALS_USR/calculator-app-finished"
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('start prod') {
+            steps {
+                sshagent(['prod-server-ssh']) {
+                    script {
+                        echo "Starting the container on production server..."
+
+                        sh '''
+                            ssh -o StrictHostKeyChecking=no ubuntu@$PROD_SERVER_IP "if docker ps -a | grep calculator-app; then
+                                docker stop calculator-app
+                                docker rm calculator-app
+                            fi"
+                        '''
+                        
+                        sh '''
+                            ssh -o StrictHostKeyChecking=no ubuntu@$PROD_SERVER_IP "docker run -d -p 80:3000 --name calculator-app $DOCKER_CREDENTIALS_USR/calculator-app-finished"
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('test prod') {
+            steps {
+                script {
+                    echo "Testing production deployment..."
+
+                    def statusCode = sh(script: "curl -s -o /dev/null -w '%{http_code}' http://$PROD_SERVER_IP", returnStdout: true).trim()
+                    
+                    if (statusCode == '200') {
+                        echo "Application is running successfully on production server."
+                    } else {
+                        error "Failed to access application on production server. HTTP Status: ${statusCode}"
+                    }
+                }
             }
         }
     }
